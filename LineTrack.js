@@ -11,6 +11,7 @@ define([
 		data:null,
 		stroke: {color: "black", width: 2},
 		scoreProperty: "score",
+		sectionIdProperty: "accession",
 		gridLines: true,
 		render: function(){
 			this.renderBackground();
@@ -23,12 +24,77 @@ define([
 		},
 
 		renderAlignedData: function(data){
+			var dataSections = {}
 
+			data.forEach(function(d){
+				if (d[this.sectionIdProperty]){
+					if (!dataSections[d[this.sectionIdProperty]]){
+						dataSections[d[this.sectionIdProperty]]=[d]
+					}else{
+						dataSections[d[this.sectionIdProperty]].push(d);
+					}
+				}
+			},this)
+
+			var refSections = this.referenceTrack.get('sections');
+
+			Object.keys(dataSections).forEach(function(secName){
+					var ds = dataSections[secName];
+					// if (ds.length>20){ return; };
+					// console.log("Adding ",ds.length, " Data Items to Section", secName);
+					// console.log("   Starting Angle: ", refSections[secName].startAngle, refSections[secName].endAngle);
+					this.renderAlignedSection(ds,refSections[secName].startAngle, refSections[secName].endAngle, refSections[secName].length);
+			},this)
 		},
+
+		renderAlignedSection: function(data,startAngle,endAngle, sectionLength){
+			var pathPoints = [];
+			var numSections = data.length;
+
+			// console.log("Degrees for Section: ",(endAngle-startAngle - (this.gap*numSections)), "TotalLenght: ", totalLength)
+			var deg = (endAngle-startAngle)/sectionLength;
+
+			console.log("degPerBP ", deg);
+
+			var path = this.surface.createPath("");
+			data.forEach(function(d,index){
+
+				console.log("D: ", d)
+				// console.log("SectionTrack this.surface: ", this.surface, " GroupIdx: ", this.surface.groupIdx);
+				var path = this.surface.createPath("");
+				//path.rawNode.data = JSON.stringify(d);
+				var score = d[this.scoreProperty];
+				// console.log("PATH: ", path);
+				// console.log("Section StartAngle: ", startAngle, " d.start: ", d.start, " degPerBp*start: ", deg*d.start);
+
+				var point;
+
+				if (  (this.min < 0) && ((this.max+this.min)===0) ){
+					var trackCenter = this.internalRadius + (this.trackWidth/2);
+					point = {x: 0, y:trackCenter + ((score/this.max) * (this.trackWidth/2)) }
+				}else if (this.min===0){
+					point = {x: 0, y:this.internalRadius + ( (score/this.max) * this.trackWidth) }
+				}else{
+					// console.log("FIX ME (LineTrack.js line 56)");
+				}
+				var m = d.start; // + ((d.end-d.start)/2)
+				var rads = ((deg*m) + startAngle) *Math.PI/180;
+				var nextPoint = {
+					x: point.y * Math.cos(rads) + this.centerPoint.x,
+					y: point.y * Math.sin(rads) + this.centerPoint.y
+				}
+
+				pathPoints.push(nextPoint);
+			},this);
+
+			var first = pathPoints.shift();
+			path.moveTo(first).smoothCurveTo(pathPoints).setStroke(this.stroke);
+		},
+
 		renderData: function(data) {
-			// if (this.referenceTrack){
-			// 	return this.renderAlignedData(data);
-			// }
+			if (this.referenceTrack){
+				return this.renderAlignedData(data);
+			}
 			var numPoints = data.length;
 			var deg = 360/numPoints
 
@@ -75,26 +141,7 @@ define([
 		renderBackground: function(refresh){
 			if (!refresh && this._backgroundRendered){ return; }
 
-			this.bgPath= this.surface.createPath("");
-			var r = this.internalRadius+this.trackWidth;
-			var start = {x: this.centerPoint.x, y: this.centerPoint.y - r};
-			var end   = {x: this.centerPoint.x, y: this.centerPoint.y + r};
-			this.bgPath.moveTo(start).arcTo(r, r, 0, true, true, end).arcTo(r, r, 0, true, true, start).closePath();
-
-			var r = this.internalRadius;
-			var start = {x: this.centerPoint.x, y: this.centerPoint.y - r};
-			var end   = {x: this.centerPoint.x, y: this.centerPoint.y + r};
-			this.bgPath.moveTo(start).arcTo(r, r, 0, true, true, end).arcTo(r, r, 0, true, true, start).closePath();
-
-			if (this.background) {
-				if (this.background.fill) {
-					this.bgPath.setFill(this.background.fill)
-				}
-
-				if (this.background.stroke) {		
-					this.bgPath.setStroke(this.background.stroke);
-				}
-			}
+			this.inherited(arguments);
 
 			if (this.gridLines){
 				this.centerPath = this.surface.createPath("");

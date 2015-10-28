@@ -17,6 +17,7 @@ define([
 		},
 		stroke: "",
 		data: null,
+		alignBackgroundToReferenceTrack: true,
 		constructor: function(viewer,options,data){
 
 			console.log("Create Track: ", options)
@@ -55,7 +56,75 @@ define([
 			this.renderBackground();
 		},
 
+		renderAlignedBackground: function(){
+
+			var refSections = this.referenceTrack.get('sections');
+
+			Object.keys(refSections).forEach(function(secName){
+					// if (ds.length>20){ return; };
+					// console.log("Adding ",ds.length, " Data Items to Section", secName);
+					// console.log("   Starting Angle: ", refSections[secName].startAngle, refSections[secName].endAngle);
+					this.renderAlignedBackgroundSection(refSections[secName].startAngle, refSections[secName].endAngle, refSections[secName].length);
+			},this)
+		},
+
+		renderAlignedBackgroundSection: function(startAngle,endAngle,sectionLength){
+			var totalLength = 0;
+			console.log("Render Aligned Background Section: ", startAngle, endAngle);
+			var path = this.surface.createPath("");
+			if (this.background){
+				path.setStroke(this.background.stroke);
+			}
+			var startRads = startAngle *Math.PI/180;
+			var rads = endAngle *Math.PI/180;
+			// console.log(d.name, " : ", "Start: ", d.startAngle, "end: ", d.endAngle)
+			var innerStart= {
+				x:  this.centerPoint.x + this.internalRadius * Math.cos(startRads),
+				y: this.centerPoint.y + this.internalRadius * Math.sin(startRads)
+			}
+
+			var outerStart = {
+				x: this.centerPoint.x + (this.internalRadius + this.trackWidth) * Math.cos(startRads),
+				y: this.centerPoint.y + (this.internalRadius + this.trackWidth) * Math.sin(startRads)
+			}
+
+			var outerEnd = {
+				x: this.centerPoint.x + (this.internalRadius + this.trackWidth) * Math.cos(rads),
+				y: this.centerPoint.y + (this.internalRadius + this.trackWidth) * Math.sin(rads)
+			}
+			var innerEnd = {
+				x: this.centerPoint.x + (this.internalRadius) * Math.cos(rads),
+				y: this.centerPoint.y  + (this.internalRadius) * Math.sin(rads) 
+			}
+			// var fillSel = index % 3;
+			var outerRadius = this.internalRadius + this.trackWidth;
+			var innerRadius = this.internalRadius
+			var large=false
+			if ((endAngle-startAngle)>=180){
+				large=true
+			}
+
+			path.moveTo(innerStart)
+				.arcTo(innerRadius,innerRadius,endAngle,large,true,innerEnd.x,innerEnd.y)
+				.lineTo(outerEnd)
+				.arcTo(outerRadius,outerRadius,startAngle,large,false,outerStart.x,outerStart.y)
+				.closePath()
+
+			if (this.background && this.background.fill){
+				if (typeof this.background.fill == "function") {
+					path.setFill(this.background.fill(score,index))
+				}else{
+					path.setFill(this.background.fill)
+				}
+			}
+
+		},
 		renderBackground: function(refresh){
+
+			if (this.referenceTrack && this.alignBackgroundToReferenceTrack){
+				return this.renderAlignedBackground();
+			}
+
 			if (!refresh && this._backgroundRendered){ console.log("Don't Re-render Background"); return; }
 
 			console.log("Render Backgroup surface ID: ", this.surface.groupIdx);
