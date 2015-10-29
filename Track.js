@@ -17,14 +17,15 @@ define([
 		},
 		stroke: "",
 		data: null,
+		visible: true,
 		alignBackgroundToReferenceTrack: true,
 		constructor: function(viewer,options,data){
 
-			console.log("Create Track: ", options)
+			// console.log("Create Track: ", options)
 
 			if (options) {
 				for (var prop in options) {
-					console.log("Mixin in", prop);
+					// console.log("Mixin in", prop);
 					this[prop] = options[prop];
 				}
 			}
@@ -34,13 +35,24 @@ define([
 			this.data=data || [];
 
 			var _self=this;
-			this.watch('data', lang.hitch(this, function(attr,oldVal,data){
 
+			this.watch("visible", function(attr,oldVal,vis){
+				if (vis){
+					_self.render();
+				}else{
+					options.surface.clear();
+					_self.hide();
+				}
+			})
+
+			this.watch('data', lang.hitch(this, function(attr,oldVal,data){
 				//no idea why this is needed to avoid losing reference to the this.surface group from the viewer
 
 				// console.log("Track set('data'): ",_self.surface.groupIdx, " opts groupIdx: ", options.surface.groupIdx)
 				_self.surface = options.surface;
-				_self.render();
+				if (this.visible){
+					_self.render();
+				}
 			}))
 
 			this.centerPoint = viewer.get("centerPoint");
@@ -49,7 +61,9 @@ define([
 			// 	this.surface = viewer.get("surface");
 			// }
 
-			this.render();
+			if (this.visible){
+				this.render();
+			}
 		},
 
 		render: function(){
@@ -70,7 +84,7 @@ define([
 
 		renderAlignedBackgroundSection: function(startAngle,endAngle,sectionLength){
 			var totalLength = 0;
-			console.log("Render Aligned Background Section: ", startAngle, endAngle);
+			// console.log("Render Aligned Background Section: ", startAngle, endAngle);
 			var path = this.surface.createPath("");
 			if (this.background){
 				path.setStroke(this.background.stroke);
@@ -125,9 +139,9 @@ define([
 				return this.renderAlignedBackground();
 			}
 
-			if (!refresh && this._backgroundRendered){ console.log("Don't Re-render Background"); return; }
+			if (!refresh && this._backgroundRendered){ return; }
 
-			console.log("Render Backgroup surface ID: ", this.surface.groupIdx);
+			// console.log("Render Backgroup surface ID: ", this.surface.groupIdx);
 			this.bgPath= this.surface.createPath("");
 			var r = this.internalRadius+this.trackWidth;
 			var start = {x: this.centerPoint.x, y: this.centerPoint.y - r};

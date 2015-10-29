@@ -1,9 +1,11 @@
 define([
 	"dojo/_base/declare", "dijit/_WidgetBase","dojox/gfx",
-	"dojo/dom-construct","dojo/_base/lang", "dojo/dom-geometry","dojo/dom-style"
+	"dojo/dom-construct","dojo/_base/lang", "dojo/dom-geometry","dojo/dom-style",
+	"dojo/topic"
 ],function(
 	declare,WidgetBase,gfx,
-	domConstruct,lang,domGeometry,domStyle
+	domConstruct,lang,domGeometry,domStyle,
+	Topic
 ){
 
 	var idx=1;
@@ -80,6 +82,8 @@ define([
 			this._tracks.push(newTrack);	
 
 			// newTrack.render();
+
+			Topic.publish("/addTrack", {track: newTrack, position: position, isReferenceTrack: isReferenceTrack});
 
 			return newTrack;
 		},

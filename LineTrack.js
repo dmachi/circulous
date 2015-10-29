@@ -14,12 +14,15 @@ define([
 		sectionIdProperty: "accession",
 		gridLines: true,
 		render: function(){
-			this.renderBackground();
-			if (this.data && this.data.length>0){
-				// console.log("RENDER DATA: ", this.data)
-				this.renderData(this.data);		
-			}else{
-				this.set("loading", true);
+			console.log("Line Track Visible in render(): ", this.visible)
+			if (this.visible){
+				this.renderBackground();
+				if (this.data && this.data.length>0){
+					// console.log("RENDER DATA: ", this.data)
+					this.renderData(this.data);		
+				}else{
+					this.set("loading", true);
+				}
 			}
 		},
 
@@ -54,12 +57,12 @@ define([
 			// console.log("Degrees for Section: ",(endAngle-startAngle - (this.gap*numSections)), "TotalLenght: ", totalLength)
 			var deg = (endAngle-startAngle)/sectionLength;
 
-			console.log("degPerBP ", deg);
+			// console.log("degPerBP ", deg);
 
 			var path = this.surface.createPath("");
 			data.forEach(function(d,index){
 
-				console.log("D: ", d)
+				// console.log("D: ", d)
 				// console.log("SectionTrack this.surface: ", this.surface, " GroupIdx: ", this.surface.groupIdx);
 				var path = this.surface.createPath("");
 				//path.rawNode.data = JSON.stringify(d);
@@ -139,7 +142,7 @@ define([
 			this.path.moveTo(first).smoothCurveTo(pathPoints).closePath().setStroke(this.stroke);
 		},
 		renderBackground: function(refresh){
-			if (!refresh && this._backgroundRendered){ return; }
+			// if (!refresh && this._backgroundRendered){ return; }
 
 			this.inherited(arguments);
 

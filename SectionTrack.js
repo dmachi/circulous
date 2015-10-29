@@ -49,15 +49,16 @@ define([
 		},
 
 		render: function(){
+			if (this.visible){
+				// console.log("render() this.surface.groupIdx: ", this.surface.groupIdx)
+				this.renderBackground();
 
-			// console.log("render() this.surface.groupIdx: ", this.surface.groupIdx)
-			this.renderBackground();
-
-			if (this.data && this.data.length>0){
-				// console.log("RENDER DATA: ", this.data)
-				this.renderData(this.data);		
-			}else{
-				this.set("loading", true);
+				if (this.data && this.data.length>0){
+					// console.log("RENDER DATA: ", this.data)
+					this.renderData(this.data);		
+				}else{
+					this.set("loading", true);
+				}
 			}
 		},
 		gap: .25,
@@ -152,7 +153,7 @@ define([
 	
 				if (this.fill){
 					if (typeof this.fill == "function") {
-						path.setFill(this.fill(score,index))
+						path.setFill(this.fill(d,index))
 					}else{
 						path.setFill(this.fill)
 					}
@@ -226,7 +227,7 @@ define([
 				
 				if (this.fill){
 					if (typeof this.fill == "function") {
-						path.setFill(this.fill(score,index))
+						path.setFill(this.fill(d,index))
 					}else{
 						path.setFill(this.fill)
 					}
