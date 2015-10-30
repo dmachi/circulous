@@ -26,18 +26,17 @@ define([
 		referenceTrack: null,
 
 		constructor: function(){
-			this.surface.connect("onclick", function(evt){
+			this.surface.connect("onclick", lang.hitch(this,function(evt){
 				console.log("ON CLICK: ", evt)
 				if (evt.gfxTarget.data){
 					if (!this.dialog){
 						this.dialog = new Dialog({style: 'width: 350px;'});
 					}
 
-					this.dialog.set('content',JSON.stringify(evt.gfxTarget.data));
+					this.dialog.set('content',this.formatDialogContent(evt.gfxTarget.data));
 					this.dialog.show();
-					console.log(evt.gfxTarget.data)
 				}
-			});
+			}));
 			var inside=false;
 			var timer;
 			// on(this.surface.getEventSource(),"mouseover", function(evt){
