@@ -1,23 +1,30 @@
 define([
 	"dojo/_base/declare", "dijit/_WidgetBase","dojox/gfx",
 	"dojo/dom-construct","dojo/_base/lang", "dojo/dom-geometry","dojo/dom-style",
-	"dojo/topic"
+	"dojo/topic","dojox/gfx/utils","dojo/when"
 ],function(
 	declare,WidgetBase,gfx,
 	domConstruct,lang,domGeometry,domStyle,
-	Topic
+	Topic,gfxUtils,when
 ){
 
 	var idx=1;
 	return declare([WidgetBase], {
 		tracks: null,
-		centerRadius: 100,
+		centerRadius: .1,
 		trackMargin: 4,
 		maxOuterRadius: 1000,
 		constructor: function(){
 			this._tracks=[];
 		},
+		exportSVG: function(){
+			console.log("Export Surface to SVG", this.surface.rawNode);
 
+			//var encoded = window.btoa(this.surface.rawNode.innerHTML);
+			var data = this.surface.rawNode.outerHTML
+			console.log("export length: ", data.length);
+			return data;
+		},
 		postCreate: function(){
 			this.inherited(arguments);
 			this.surfaceNode = domConstruct.create("div", {style: {width: "100%",height:"100%"}}, this.domNode);
@@ -27,6 +34,25 @@ define([
 
 		onUpdateReferenceTrackSections: function(attr,oldVal,sections){
 			console.log("Update Reference Track Sections");
+		},
+
+
+		getTrackWidth: function(trackFrac){
+			// console.log("Get Track Width: ", trackFrac, " Max Outer: ", this.maxOuterRadius);
+			var out;
+			if (typeof trackFrac == "string"){
+				// console.log("TrackWidth is string")
+				if(trackFrac.match("px")){
+					// console.log("Has PX",trackFrac.replace(/px/gi,"") )
+					out =  parseInt(trackFrac.replace(/px/gi,""));
+				}
+			}else{
+				out = this.maxOuterRadius * trackFrac;
+			}
+
+			// console.log("Calculated TW: ", out);
+			return out;
+			return this.maxOuterRadius * trackFrac;
 		},
 
 		addTrack: function(track,position,isReferenceTrack){
@@ -47,26 +73,26 @@ define([
 
 			if (!opts.internalRadius){
 				if (pos && pos=="perimeter"){
-					opts.internalRadius = this.maxOuterRadius - (track.trackWidth||opts.trackWidth) - this.trackMargin;
+					opts.internalRadius = this.maxOuterRadius - this.getTrackWidth(opts.trackWidth||track.trackWidth) - this.trackMargin;
 					opts.position = "perimeter";
 					this._maxOuterRadius = opts.internalRadius;
-					console.log("Internal Radius: ", opts.internalRadius, " max", this.maxOuterRadius, (track.trackWidth||opts.trackWidth), this.trackMargin)
+					console.log("Internal Radius: ", opts.internalRadius, " max", this.maxOuterRadius, this.getTrackWidth(opts.trackWidth||track.trackWidth), this.trackMargin)
 				}else if (pos=="inner"){
 					opts.internalRadius = this.centerRadius;
 					opts.position = "inner"
 					this._tracks.forEach(function(t){
 						if (t.position=="inner"){
-							opts.internalRadius += t.trackWidth + this.trackMargin;
+							opts.internalRadius += this.getTrackWidth(t.trackWidth) + this.trackMargin;
 						}
 					},this);
 				}else{
 					opts.position = "outer";
 
-					opts.internalRadius = (this._maxOuterRadius || this.maxOuterRadius) - (track.trackWidth||opts.trackWidth) - this.trackMargin ;
+					opts.internalRadius = (this._maxOuterRadius || this.maxOuterRadius) - this.getTrackWidth(opts.trackWidth||track.trackWidth) - this.trackMargin ;
 
 					this._tracks.forEach(function(t){
 						if (t.position=="outer"){
-							opts.internalRadius -= t.trackWidth + this.trackMargin;
+							opts.internalRadius -= this.getTrackWidth(t.trackWidth) + this.trackMargin;
 						}
 					},this);
 				}

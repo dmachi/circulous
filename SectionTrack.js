@@ -1,10 +1,20 @@
 define([
         "dojo/_base/declare","dojox/gfx","dojox/gfx/matrix",
-        "dojo/_base/lang","./Track","dojo/on","dijit/Dialog"
+        "dojo/_base/lang","./Track","dojo/on","dijit/Dialog",
+        "dijit/TooltipDialog","dijit/popup"
 ],function(
         declare,gfx,matrix,
-        lang,Track,on,Dialog
+        lang,Track,on,Dialog,
+        TooltipDialog,Popup
 ){
+
+	var TTDialog = new TooltipDialog({
+		onMouseLeave: function(){
+		    Popup.close(TTDialog);
+		}
+	})
+	Popup.moveOffScreen(TTDialog);
+
 	return declare([Track], {
 		max:100,
 		min: 0,
@@ -14,6 +24,7 @@ define([
 		sectionIdProperty: "accession",
 		sections: null,
 		referenceTrack: null,
+
 		constructor: function(){
 			this.surface.connect("onclick", function(evt){
 				console.log("ON CLICK: ", evt)
@@ -27,9 +38,12 @@ define([
 					console.log(evt.gfxTarget.data)
 				}
 			});
+			var inside=false;
+			var timer;
 			// on(this.surface.getEventSource(),"mouseover", function(evt){
-			this.surface.connect("onmouseover", function(evt){
-				// console.log("Mouse Over EVT: ", evt)
+			this.surface.connect("onmouseover", lang.hitch(this,function(evt){
+				inside=true;
+				console.log("Mouse Over EVT: ", evt)
 				if (!evt.gfxTarget.data){
 					return;
 				}
@@ -37,14 +51,34 @@ define([
 				// console.log("Current: ", cur)
 				evt.gfxTarget.currentFill = cur;
 				evt.gfxTarget.setFill('#ff0000');
-			})
+
+				TTDialog.set('content', this.formatPopupContent(evt.gfxTarget.data))
+
+				Popup.open({
+					// parent: this,
+					x: evt.x-10,
+					y: evt.y+15,
+					popup: TTDialog
+					//around: evt.gfxTarget.rawNode
+				})
+			}))
 
 			// on(this.surface.getEventSource(),"mouseout", function(evt){
 			this.surface.connect("onmouseout", function(evt){
+				inside=false;
 				// console.log("Mouse Out EVT: ", evt, evt.gfxTarget.currentFill);
 				if (evt.gfxTarget.currentFill){
 					evt.gfxTarget.setFill(evt.gfxTarget.currentFill)
 				}
+				if (timer){
+					clearTimeout(timer);
+				}
+				timer = setTimeout(function(){
+					if (!inside){
+						Popup.close(TTDialog);
+					}
+				},1500)
+				
 			})
 		},
 
@@ -102,10 +136,9 @@ define([
 
 			// console.log("Gap Deg: ",(this.gap*numSections) )
 			// console.log("degPerBP ", deg);
-
+			var trackWidth = this.get("trackWidth");
 			var gap = (this.gap);
 			data.forEach(function(d,index){
-
 				// console.log("SectionTrack this.surface: ", this.surface, " GroupIdx: ", this.surface.groupIdx);
 				var path = this.surface.createPath("");
 				//path.rawNode.data = JSON.stringify(d);
@@ -125,20 +158,20 @@ define([
 				}
 
 				var outerStart = {
-					x: this.centerPoint.x + (this.internalRadius + this.trackWidth) * Math.cos(startRads),
-					y: this.centerPoint.y + (this.internalRadius + this.trackWidth) * Math.sin(startRads)
+					x: this.centerPoint.x + (this.internalRadius + trackWidth) * Math.cos(startRads),
+					y: this.centerPoint.y + (this.internalRadius + trackWidth) * Math.sin(startRads)
 				}
 
 				var outerEnd = {
-					x: this.centerPoint.x + (this.internalRadius + this.trackWidth) * Math.cos(rads),
-					y: this.centerPoint.y + (this.internalRadius + this.trackWidth) * Math.sin(rads)
+					x: this.centerPoint.x + (this.internalRadius + trackWidth) * Math.cos(rads),
+					y: this.centerPoint.y + (this.internalRadius + trackWidth) * Math.sin(rads)
 				}
 				var innerEnd = {
 					x: this.centerPoint.x + (this.internalRadius) * Math.cos(rads),
 					y: this.centerPoint.y  + (this.internalRadius) * Math.sin(rads) 
 				}
 				// var fillSel = index % 3;
-				var outerRadius = this.internalRadius + this.trackWidth;
+				var outerRadius = this.internalRadius + trackWidth;
 				var innerRadius = this.internalRadius
 				var large=false
 				if ((deg*d.length)>180){
@@ -158,7 +191,7 @@ define([
 						path.setFill(this.fill)
 					}
 				}
-	
+				this._foregroundColorPaths.push(path);
 			},this);
 		},
 
@@ -179,7 +212,7 @@ define([
 			var deg = (360 - (this.gap*numSections))/totalLength;
 			var gap = (this.gap);
 			data.forEach(lang.hitch(this,function(d,index){
-
+				var trackWidth = this.get("trackWidth");
 				// console.log("Render Section Data GroupIdx: ", this.surface.groupIdx);
 				var path = this.surface.createPath("");
 				// path.rawNode.data = JSON.stringify(d);
@@ -199,20 +232,20 @@ define([
 				}
 
 				var outerStart = {
-					x: this.centerPoint.x + (this.internalRadius + this.trackWidth) * Math.cos(startRads),
-					y: this.centerPoint.y + (this.internalRadius + this.trackWidth) * Math.sin(startRads)
+					x: this.centerPoint.x + (this.internalRadius + trackWidth) * Math.cos(startRads),
+					y: this.centerPoint.y + (this.internalRadius + trackWidth) * Math.sin(startRads)
 				}
 
 				var outerEnd = {
-					x: this.centerPoint.x + (this.internalRadius + this.trackWidth) * Math.cos(rads),
-					y: this.centerPoint.y + (this.internalRadius + this.trackWidth) * Math.sin(rads)
+					x: this.centerPoint.x + (this.internalRadius + trackWidth) * Math.cos(rads),
+					y: this.centerPoint.y + (this.internalRadius + trackWidth) * Math.sin(rads)
 				}
 				var innerEnd = {
 					x: this.centerPoint.x + (this.internalRadius) * Math.cos(rads),
 					y: this.centerPoint.y  + (this.internalRadius) * Math.sin(rads) 
 				}
 				// var fillSel = index % 3;
-				var outerRadius = this.internalRadius + this.trackWidth;
+				var outerRadius = this.internalRadius + trackWidth;
 				var innerRadius = this.internalRadius
 				var large=false
 				if ((deg*d.length)>180){
@@ -232,7 +265,7 @@ define([
 						path.setFill(this.fill)
 					}
 				}
-	
+				this._foregroundColorPaths.push(path);
 			}));
 
 			// console.log("Set Sections: ", sections)

@@ -13,6 +13,36 @@ define([
 		scoreProperty: "score",
 		sectionIdProperty: "accession",
 		gridLines: true,
+
+		applyForegroundColor: function(color){
+			var stroke = this.stroke;
+			if (!this.stroke || (typeof this.stroke=='string')) { 
+				this.stroke = {color: color} 
+			}else{
+				this.stroke.color = color;
+			}
+
+
+
+			this._foregroundColorPaths.forEach(function(p){
+				p.setStroke(this.stroke);
+			},this)
+		},
+
+		applyBackgroundColor: function(color){
+			if (!this.background || (typeof this.background=='string')) { 
+				this.background = {fill: color} 
+			}else{
+				this.background.fill = color;
+			}
+
+			this._backgroundPaths.forEach(function(p){
+				if (p){
+					p.setFill(color);
+				}
+			},this)
+		},
+
 		render: function(){
 			console.log("Line Track Visible in render(): ", this.visible)
 			if (this.visible){
@@ -60,6 +90,7 @@ define([
 			// console.log("degPerBP ", deg);
 
 			var path = this.surface.createPath("");
+			var trackWidth = this.get("trackWidth");
 			data.forEach(function(d,index){
 
 				// console.log("D: ", d)
@@ -73,10 +104,10 @@ define([
 				var point;
 
 				if (  (this.min < 0) && ((this.max+this.min)===0) ){
-					var trackCenter = this.internalRadius + (this.trackWidth/2);
-					point = {x: 0, y:trackCenter + ((score/this.max) * (this.trackWidth/2)) }
+					var trackCenter = this.internalRadius + (trackWidth/2);
+					point = {x: 0, y:trackCenter + ((score/this.max) * (trackWidth/2)) }
 				}else if (this.min===0){
-					point = {x: 0, y:this.internalRadius + ( (score/this.max) * this.trackWidth) }
+					point = {x: 0, y:this.internalRadius + ( (score/this.max) * trackWidth) }
 				}else{
 					// console.log("FIX ME (LineTrack.js line 56)");
 				}
@@ -92,6 +123,7 @@ define([
 
 			var first = pathPoints.shift();
 			path.moveTo(first).smoothCurveTo(pathPoints).setStroke(this.stroke);
+			this._foregroundColorPaths.push(path);
 		},
 
 		renderData: function(data) {
@@ -109,7 +141,7 @@ define([
 			var pathPoints = [];	
 
 			var diff = this.max - this.min;
-
+			var trackWidth = this.get("trackWidth");
 
 			this.data.forEach(function(item,index){
 				var score = item[this.scoreProperty];
@@ -121,10 +153,10 @@ define([
 				var point;
 
 				if (  (this.min < 0) && ((this.max+this.min)===0) ){
-					var trackCenter = this.internalRadius + (this.trackWidth/2);
-					point = {x: 0, y:trackCenter + ((score/this.max) * (this.trackWidth/2)) }
+					var trackCenter = this.internalRadius + (trackWidth/2);
+					point = {x: 0, y:trackCenter + ((score/this.max) * (trackWidth/2)) }
 				}else if (this.min===0){
-					point = {x: 0, y:this.internalRadius + ( (score/this.max) * this.trackWidth) }
+					point = {x: 0, y:this.internalRadius + ( (score/this.max) * trackWidth) }
 				}else{
 					// console.log("FIX ME (LineTrack.js line 56)");
 				}
@@ -140,36 +172,37 @@ define([
 
 			var first = pathPoints.shift();
 			this.path.moveTo(first).smoothCurveTo(pathPoints).closePath().setStroke(this.stroke);
+			this._foregroundColorPaths.push(this.path)
 		},
 		renderBackground: function(refresh){
 			// if (!refresh && this._backgroundRendered){ return; }
 
 			this.inherited(arguments);
-
+			var trackWidth = this.get("trackWidth");
 			if (this.gridLines){
 				this.centerPath = this.surface.createPath("");
-				var r = this.internalRadius+(this.trackWidth/2)
+				var r = this.internalRadius+(trackWidth/2)
 				var start = {x: this.centerPoint.x, y: this.centerPoint.y - r};
 				var end   = {x: this.centerPoint.x, y: this.centerPoint.y + r};
 				this.centerPath.moveTo(start).arcTo(r, r, 0, true, true, end).arcTo(r, r, 0, true, true, start).closePath();
 				this.centerPath.setStroke({color: "#666666",style: "dot"});
 
 				this.topQuarterPath = this.surface.createPath("");
-				var r = this.internalRadius+((this.trackWidth/4)*3)
+				var r = this.internalRadius+((trackWidth/4)*3)
 				var start = {x: this.centerPoint.x, y: this.centerPoint.y - r};
 				var end   = {x: this.centerPoint.x, y: this.centerPoint.y + r};
 				this.topQuarterPath.moveTo(start).arcTo(r, r, 0, true, true, end).arcTo(r, r, 0, true, true, start).closePath();
 				this.topQuarterPath.setStroke({color: "#aaaaaa",style: "dot"});
 
 				this.bottomQuarterPath = this.surface.createPath("");
-				var r = this.internalRadius+(this.trackWidth/4)
+				var r = this.internalRadius+(trackWidth/4)
 				var start = {x: this.centerPoint.x, y: this.centerPoint.y - r};
 				var end   = {x: this.centerPoint.x, y: this.centerPoint.y + r};
 				this.bottomQuarterPath.moveTo(start).arcTo(r, r, 0, true, true, end).arcTo(r, r, 0, true, true, start).closePath();
 				this.bottomQuarterPath.setStroke({color: "#aaaaaa",style: "dot"});
 			}
 			this._backgroundRendered=true;
-
+			this._backgroundPaths.push(this.bgPath);
 			return this.bgPath;
 		}
 	});

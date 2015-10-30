@@ -9,7 +9,9 @@ define([
 ){
 	return declare([Stateful], {
 		internalRadius: 100,
-		trackWidth: 32,
+		trackWidth: .1,
+		foregroundColor: null,
+		backgroundColor: null,
 		fill: "",
 		background: {
 			fill: "",
@@ -20,7 +22,8 @@ define([
 		visible: true,
 		alignBackgroundToReferenceTrack: true,
 		constructor: function(viewer,options,data){
-
+			this._foregroundColorPaths=[]
+			this._backgroundPaths = [];
 			// console.log("Create Track: ", options)
 
 			if (options) {
@@ -29,7 +32,7 @@ define([
 					this[prop] = options[prop];
 				}
 			}
-
+			this.viewer = viewer;
 			this.surface = options.surface;
 
 			this.data=data || [];
@@ -41,7 +44,8 @@ define([
 					_self.render();
 				}else{
 					options.surface.clear();
-					_self.hide();
+					this._foregroundColorPaths=[];
+					this._backgroundPaths=[];
 				}
 			})
 
@@ -55,6 +59,14 @@ define([
 				}
 			}))
 
+			this.watch("foregroundColor", function(attr,oldVal,c){
+				_self.applyForegroundColor(c)
+			})
+
+			this.watch("backgroundColor", function(attr,oldVal,c){
+				_self.applyBackgroundColor(c)
+			})
+
 			this.centerPoint = viewer.get("centerPoint");
 
 			// if (!this.surface){
@@ -64,6 +76,38 @@ define([
 			if (this.visible){
 				this.render();
 			}
+		},
+
+		formatPopupContent: function(item){
+			return item.name;
+		},
+
+		formatDialogContent: function(item){
+			return JSON.stringify(item);
+		},
+
+		applyForegroundColor: function(color){
+			this.fill=color;
+
+			this._foregroundColorPaths.forEach(function(p){
+				p.setFill(color);
+			},this)
+		},
+		applyBackgroundColor: function(color){
+			if (!this.background || (typeof this.background=='string')) { 
+				this.background = {fill: color} 
+			}else{
+				this.background.fill = color;
+			}
+
+			this._backgroundPaths.forEach(function(p){
+				p.setFill(color);
+			},this)
+		},
+
+		_trackWidthGetter: function(){
+			// console.log("_getTrackWidthAttr internal tw:", this.trackWidth, " from Viewer: ",this.viewer.getTrackWidth(this.trackWidth))
+			return this.viewer.getTrackWidth(this.trackWidth)
 		},
 
 		render: function(){
@@ -84,6 +128,7 @@ define([
 
 		renderAlignedBackgroundSection: function(startAngle,endAngle,sectionLength){
 			var totalLength = 0;
+			var trackWidth = this.get("trackWidth");
 			// console.log("Render Aligned Background Section: ", startAngle, endAngle);
 			var path = this.surface.createPath("");
 			if (this.background){
@@ -98,20 +143,20 @@ define([
 			}
 
 			var outerStart = {
-				x: this.centerPoint.x + (this.internalRadius + this.trackWidth) * Math.cos(startRads),
-				y: this.centerPoint.y + (this.internalRadius + this.trackWidth) * Math.sin(startRads)
+				x: this.centerPoint.x + (this.internalRadius + trackWidth) * Math.cos(startRads),
+				y: this.centerPoint.y + (this.internalRadius + trackWidth) * Math.sin(startRads)
 			}
 
 			var outerEnd = {
-				x: this.centerPoint.x + (this.internalRadius + this.trackWidth) * Math.cos(rads),
-				y: this.centerPoint.y + (this.internalRadius + this.trackWidth) * Math.sin(rads)
+				x: this.centerPoint.x + (this.internalRadius + trackWidth) * Math.cos(rads),
+				y: this.centerPoint.y + (this.internalRadius + trackWidth) * Math.sin(rads)
 			}
 			var innerEnd = {
 				x: this.centerPoint.x + (this.internalRadius) * Math.cos(rads),
 				y: this.centerPoint.y  + (this.internalRadius) * Math.sin(rads) 
 			}
 			// var fillSel = index % 3;
-			var outerRadius = this.internalRadius + this.trackWidth;
+			var outerRadius = this.internalRadius + trackWidth;
 			var innerRadius = this.internalRadius
 			var large=false
 			if ((endAngle-startAngle)>=180){
@@ -131,19 +176,19 @@ define([
 					path.setFill(this.background.fill)
 				}
 			}
-
+			this._backgroundPaths.push(path);
 		},
 		renderBackground: function(refresh){
-
+			var trackWidth = this.get("trackWidth");
 			if (this.referenceTrack && this.alignBackgroundToReferenceTrack){
 				return this.renderAlignedBackground();
 			}
 
 			if (!refresh && this._backgroundRendered){ return; }
-
+			console.log("RENDER BACKGROUND: ", trackWidth);
 			// console.log("Render Backgroup surface ID: ", this.surface.groupIdx);
 			this.bgPath= this.surface.createPath("");
-			var r = this.internalRadius+this.trackWidth;
+			var r = this.internalRadius+trackWidth;
 			var start = {x: this.centerPoint.x, y: this.centerPoint.y - r};
 			var end   = {x: this.centerPoint.x, y: this.centerPoint.y + r};
 			this.bgPath.moveTo(start).arcTo(r, r, 0, true, true, end).arcTo(r, r, 0, true, true, start).closePath();
@@ -163,6 +208,7 @@ define([
 				}
 			}
 
+			this._backgroundPaths.push(this.bgPath);
 			this._backgroundRendered=true;
 			return this.bgPath;
 		}
