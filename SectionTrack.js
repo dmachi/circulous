@@ -30,7 +30,7 @@ define([
 				console.log("ON CLICK: ", evt)
 				if (evt.gfxTarget.data){
 					if (!this.dialog){
-						this.dialog = new Dialog({style: 'width: 350px;'});
+						this.dialog = new Dialog({});
 					}
 
 					this.dialog.set('content',this.formatDialogContent(evt.gfxTarget.data));
