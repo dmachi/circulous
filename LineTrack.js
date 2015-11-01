@@ -49,6 +49,7 @@ define([
 				this.renderBackground();
 				if (this.data && this.data.length>0){
 					// console.log("RENDER DATA: ", this.data)
+					this.set("loading", false);
 					this.renderData(this.data);		
 				}else{
 					this.set("loading", true);

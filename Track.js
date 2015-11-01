@@ -1,9 +1,9 @@
 define([
-        "dojo/_base/declare","dojox/gfx",
+        "dojo/_base/declare","dojox/gfx","dojox/gfx/fx",
         "dojo/_base/lang","dojo/Stateful",
         "dojo/on"
 ],function(
-        declare,gfx,
+        declare,gfx,fx,
         lang,Stateful,
         on
 ){
@@ -21,6 +21,7 @@ define([
 		data: null,
 		visible: true,
 		alignBackgroundToReferenceTrack: true,
+		loadingText: "LOADING DATA",
 		constructor: function(viewer,options,data){
 			this._foregroundColorPaths=[]
 			this._backgroundPaths = [];
@@ -49,6 +50,21 @@ define([
 				}
 			})
 
+			this.watch("loading", function(attr,oldVal, loading){
+				console.log("SET LOADING: ", loading, "VISIBLE: ", _self.visible)
+				// if (oldVal == loading){ return; }
+				if (loading && _self.visible){
+					console.log("CALL RENDER LOADING")
+					_self.renderLoading()
+				}else if (_self._loadingPath) {
+					if (this._loadingAnimationInterval){
+						clearInterval(this._loadingAnimationInterval);
+						delete this._loadingAnimationInterval;
+					}
+					_self._loadingPath.clear();
+				}
+			})
+
 			this.watch('data', lang.hitch(this, function(attr,oldVal,data){
 				//no idea why this is needed to avoid losing reference to the this.surface group from the viewer
 
@@ -74,7 +90,11 @@ define([
 			// }
 
 			if (this.visible){
-				this.render();
+				if (this.data){
+					this.render();
+				}else{
+					this.set("loading", true)
+				}
 			}
 		},
 
@@ -111,6 +131,7 @@ define([
 		},
 
 		render: function(){
+
 			this.renderBackground();
 		},
 
@@ -211,6 +232,58 @@ define([
 			this._backgroundPaths.push(this.bgPath);
 			this._backgroundRendered=true;
 			return this.bgPath;
+		},
+
+		renderLoading: function() {
+			console.log("RENDER LOADING: ", trackWidth);
+			// console.log("Render Backgroup surface ID: ", this.surface.groupIdx);
+ 			var trackWidth = this.get("trackWidth");
+ 			this._loadingPath = this.surface.createGroup("");
+			var path = this._loadingPath.createPath("");
+			var r = this.internalRadius+trackWidth;
+			var start = {x: this.centerPoint.x, y: this.centerPoint.y - r};
+			var end   = {x: this.centerPoint.x, y: this.centerPoint.y + r};
+			path.moveTo(start).arcTo(r, r, 0, true, true, end).arcTo(r, r, 0, true, true, start).closePath();
+
+			var r = this.internalRadius;
+			var start = {x: this.centerPoint.x, y: this.centerPoint.y - r};
+			var end   = {x: this.centerPoint.x, y: this.centerPoint.y + r};
+			path.moveTo(start).arcTo(r, r, 0, true, true, end).arcTo(r, r, 0, true, true, start).closePath();
+
+
+
+			var r = this.internalRadius + ((trackWidth * .25)/2);	
+			var start = {x: this.centerPoint.x, y: this.centerPoint.y + r};
+			var end   = {x: this.centerPoint.x, y: this.centerPoint.y - r};
+			var tp = this._loadingPath.createTextPath({text: this.loadingText, align: "middle"});
+			tp.setStroke("#333")
+				.moveTo(start.x,start.y)
+				.arcTo(r,r,0,true,true,end).arcTo(r,r,0,true,true,start).closePath()
+				.setFont({family: "arial", size: trackWidth*.75 + "px"})
+				.setFill("#333");
+
+			path.setStroke("#eee");
+			// path.setFill("#333");
+
+			var _self=this;
+			var interval = 2500;
+			var anFn = function(){
+				fx.animateTransform({
+					duration: interval,
+					shape: tp,
+					transform: [{
+						name: "rotategAt",
+						start: [0,_self.centerPoint.x, _self.centerPoint.y],
+						end: [360, _self.centerPoint.x, _self.centerPoint.y]
+					}]
+				}).play()
+			}
+
+			this._loadingAnimationInterval = setInterval(anFn,interval + 1000);
+			setTimeout(anFn,500);
+
+			console.log("renderLoading complete");
+			return path;
 		}
 	});
 });
