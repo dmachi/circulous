@@ -15,7 +15,7 @@ define([
 		fill: "",
 		background: {
 			fill: "",
-			stroke: "",
+			stroke: ""
 		},
 		stroke: "",
 		data: null,
