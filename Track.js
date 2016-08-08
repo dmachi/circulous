@@ -20,6 +20,7 @@ define([
 		stroke: "",
 		data: null,
 		visible: true,
+		hideable: null,
 		alignBackgroundToReferenceTrack: true,
 		loadingText: "LOADING DATA",
 		constructor: function(viewer,options,data){
