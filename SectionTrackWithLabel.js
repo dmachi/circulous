@@ -82,7 +82,6 @@ define([
 		},
 */
 		render: function(){
-			this.hideable = true;
 			console.log("this.visible: ",this.visible, " referenceTrack: ", this.referenceTrack);
 			if (this.visible){
 				// console.log("render() this.surface.groupIdx: ", this.surface.groupIdx)
