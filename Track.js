@@ -42,7 +42,7 @@ define([
 			var _self=this;
 
 			this.watch("visible", function(attr,oldVal,vis){
-				if (vis){
+				if (vis && _self.data.length>0){
 					_self.render();
 				}else{
 					options.surface.clear();
